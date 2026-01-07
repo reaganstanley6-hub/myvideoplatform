@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    container_name: myvideoplatform_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ffmpeg:
+    image: jrottenberg/ffmpeg:4.4-ubuntu
+    container_name: myvideoplatform_ffmpeg
+    # This image provides ffmpeg binary; services can reference it.
+
+  app:
+    image: node:18
+    container_name: myvideoplatform_app
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+    command: sh -c "npm ci && npm run dev"
+    depends_on:
+      - redis
+      - ffmpeg
+
+  worker:
+    image: node:18
+    container_name: myvideoplatform_worker
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+    command: sh -c "npm ci && npm run worker"
+    depends_on:
+      - redis
+      - ffmpeg

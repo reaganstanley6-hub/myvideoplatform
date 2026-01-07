@@ -1,0 +1,28 @@
+name: Playwright E2E
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install system deps (ffmpeg)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Build Next app
+        run: npm run build
+      - name: Start app
+        run: npm run start &
+      - name: Wait for app
+        run: npx wait-on http://localhost:3000
+      - name: Run Playwright tests
+        run: npx playwright test --project=chromium
